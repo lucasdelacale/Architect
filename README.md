@@ -48,14 +48,6 @@ arquitetura modular capaz de evoluir continuamente.
        ↓
     Obsidian + Supermemory
 
-## Stack recomendada
-
-  Papel               Modelo
-  ------------------- ----------------
-  Implementador       Kimi K2.7 Code
-  Especialista        GLM-5.2
-  Consultor Premium   Grok 4.5
-
 ## Dependências
 
 -   OpenCode
