@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "Lucas Martins",
+  "default_agent": "architect",
+  "references": {
+    "architect": {
+      "path": "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Architect",
+      "description": "Vault Architect no Obsidian: arquitetura, agentes, skills, workflows, decisoes e relatorios de evolucao do sistema Architect."
+    }
+  },
+  "permission": {
+    "external_directory": {
+      "*": "ask",
+      "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Architect/**": "allow"
+    }
+  }
+}
