@@ -1,0 +1,16 @@
+﻿# Obsidian
+.obsidian/
+.obsidian.json
+.trash/
+*.tmp
+
+# Backups (manter no repo, mas excluir se muito grandes)
+# Backups/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
