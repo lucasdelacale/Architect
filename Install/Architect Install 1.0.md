@@ -492,6 +492,17 @@ Responsável por:
 
 ---
 
+## Campaign Timeline
+
+Responsável por:
+
+* análise de campanhas com linha do tempo;
+* correlação entre otimizações e dados;
+* formato de relatório com observações (←, <<<);
+* detecção de anomalias.
+
+---
+
 ## HTML Report System
 
 Responsável por:
