@@ -2,20 +2,135 @@
   "$schema": "https://opencode.ai/config.json",
   "username": "Lucas Martins",
   "default_agent": "odysseus",
+  
   "agent": {
+    // Desabilita agentes padrão inferiores
     "plan": { "disable": true },
-    "build": { "disable": true }
+    "build": { "disable": true },
+    
+    // ODYSSEUS - Planejador Estratégico (PRIMARY)
+    // Modo plan interativo: pergunta, valida, sugere, delega
+    "odysseus": {
+      "mode": "primary",
+      "description": "Planejador estratégico. Pergunta, valida e sugere antes de delegar execução. Inteligência máxima + delegação.",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "write": "deny",
+        "task": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "webfetch": "allow"
+      }
+    },
+    
+    // SYSYPHUS - Executor Principal (PRIMARY)
+    // ÚNICO agente que altera arquivos
+    "sysyphus": {
+      "mode": "primary",
+      "description": "Executor principal. ÚNICO agente que altera arquivos. Executa planos do Odysseus.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "write": "allow",
+        "task": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "webfetch": "allow"
+      }
+    },
+    
+    // ATENA - Revisão Crítica (SUBAGENT)
+    // Audita, questiona, identifica riscos
+    "atenas": {
+      "mode": "subagent",
+      "description": "Revisão crítica. Questiona premissas, identifica riscos, audita conclusões.",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "write": "deny",
+        "task": "deny",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "webfetch": "allow"
+      }
+    },
+    
+    // HERMES - Pesquisador (SUBAGENT)
+    // Busca informações e contexto
+    "hermes": {
+      "mode": "subagent",
+      "description": "Pesquisador rápido. Busca informações e contexto no vault e web.",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "write": "deny",
+        "task": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "webfetch": "allow"
+      }
+    },
+    
+    // SUBAGENTES DE ESPECIALIDADE
+    "growth-strategist": {
+      "mode": "subagent",
+      "description": "Estratégia, hipóteses, metodologia, direção de análise."
+    },
+    "performance-analyst": {
+      "mode": "subagent",
+      "description": "Análise de dados de mídia multicanal (Google/Meta/TikTok/DV360/GA4)."
+    },
+    "experimentation-scientist": {
+      "mode": "subagent",
+      "description": "Causalidade e experimentação (DiD, Incrementality, Holdout, A/B, Causal Impact)."
+    },
+    "knowledge-manager": {
+      "mode": "subagent",
+      "description": "Gestão do conhecimento no Obsidian."
+    },
+    "creative-director": {
+      "mode": "subagent",
+      "description": "HTML/CSS, relatórios, dashboards, padrão executivo."
+    },
+    "communication-strategist": {
+      "mode": "subagent",
+      "description": "Tradução executiva e storytelling."
+    },
+    "automation-engineer": {
+      "mode": "subagent",
+      "description": "Scripts, APIs, integrações, Git, arquitetura técnica."
+    },
+    "critical-reviewer": {
+      "mode": "subagent",
+      "description": "Auditor independente antes da finalização."
+    },
+    "architect-evolution": {
+      "mode": "subagent",
+      "description": "Meta-agente de auditoria e melhoria da arquitetura."
+    }
   },
+  
   "references": {
     "architect": {
       "path": "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Architect",
-      "description": "Vault Architect no Obsidian: arquitetura, agentes, skills, workflows, decisoes e relatorios de evolucao do sistema Architect."
+      "description": "Vault Architect no Obsidian: arquitetura, agentes, skills, workflows."
+    },
+    "database": {
+      "path": "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Campanhas/Dados/Database/WPP_Smart-Fit-NET_DataBase_D-1.xlsx",
+      "description": "Base de dados oficial D-1 (WPP Smart-Fit-NET)."
     }
   },
+  
   "permission": {
     "external_directory": {
       "*": "ask",
-      "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Architect/**": "allow"
+      "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Architect/**": "allow",
+      "C:/Users/lucas.martins/OneDrive - insidemedia.net/Documentos/Obsidian Vault/Campanhas/**": "allow"
     }
   }
 }
