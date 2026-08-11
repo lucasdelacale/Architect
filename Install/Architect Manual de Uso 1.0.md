@@ -2,7 +2,7 @@
 
 **Versão:** 1.0  
 **Data:** 2026-08-06  
-**Última atualização:** Fase 5 concluída
+**Última atualização:** 2026-08-11 (v2.0 Google Sheets com cache)
 
 ---
 
@@ -155,13 +155,43 @@ Para perguntas simples, use o Odysseus diretamente:
 
 ### Base Oficial D-1
 
-**Arquivo:** `WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
+**Fonte Primária: Google Sheets (v2.0 com Cache)**
 
-**Localização:** `Campanhas/Dados/Database/`
+- **Link de acesso**: [https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/](https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/)
+- **Script multi-aba (v2.0)**: `architect/data/google_sheets_multi_loader.py`
+  - Cache em memória (TTL 5min) e em disco
+  - Refresh automático (seletivo ou total)
+  - Métricas de performance
+- **Script legado**: `architect/data/google_sheets_loader.py`
+- **Configuração**: `architect/config/sheets_config.json`
+- **Dependências**: `pip install pandas requests`
+- **Vantagens**: cache inteligente, atualização automática, refresh sob demanda, acesso colaborativo
+- **Compatibilidade**: estrutura idêntica à base Excel anterior
 
-**Atualização:** Diária pelo usuário
+**Abas de Controle (v2.0 — Multi-aba com Cache)**
 
-**Colunas:**
+A planilha Google Sheets foi expandida para incluir abas de controle por plataforma. O script v2.0 adiciona cache inteligente para otimizar performance.
+
+| Aba | Plataforma | Colunas de Controle |
+|---|---|---|
+| `Database` | Dados D-1 (resultados) | 14 colunas (A–N) |
+| `Google Ads \| NET` | Google Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `DV360 \| NET` | DV360 | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `FACEBOOK Ads\| NET` | Meta Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `TIKTOK Ads\| NET` | TikTok Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `BING Ads\| NET` | Bing Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+
+**Vantagem**: benchmarks integrados para análise de performance vs. planejado.
+
+**Backup: Excel Local**
+
+- **Arquivo:** `WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
+- **Localização:** `Campanhas/Dados/Database/`
+- **Status:** mantido como backup e referência histórica
+
+**Atualização:** Diária pelo usuário (D-1)
+
+**Colunas (aba Database):**
 | Col | Campo | Descrição |
 |---|---|---|
 | A | date | Data (dia) |
@@ -277,6 +307,13 @@ Skills com benchmarks específicos para cada canal:
 - **budget-optimizer**: Recomenda redistribuição de orçamento
 - **creative-analyst**: Analisa performance de criativos
 
+### 10. Google Sheets v2.0 com Cache (2026-08-11)
+- Cache em memória com TTL configurável (padrão 5min)
+- Cache em disco para persistência entre sessões
+- Refresh automático (seletivo por plataforma ou total)
+- Métricas de performance (hits, misses, taxa de acerto)
+- Dependências simplificadas: `pandas` + `requests`
+
 ---
 
 ## Grid de Delegação
@@ -327,6 +364,31 @@ Use o workflow `/dev`:
 /dev Script para extrair dados do D-1 automaticamente
 ```
 
+### Para dados com cache (v2.0)
+O sistema de cache otimiza consultas repetidas:
+```python
+# Carregar dados (usa cache automaticamente)
+from architect.data.google_sheets_multi_loader import load_all_sheets_data
+d1, control = load_all_sheets_data()
+
+# Forçar dados atualizados
+from architect.data.google_sheets_multi_loader import refresh_all_data
+d1, control = refresh_all_data()
+
+# Ver performance do cache
+from architect.data.google_sheets_multi_loader import get_cache_metrics
+metrics = get_cache_metrics()
+print(f"Taxa de acerto: {metrics['hit_rate_percent']}%")
+```
+
+### Para buscar benchmarks de campanha
+```python
+from architect.data.google_sheets_multi_loader import get_campaign_benchmarks
+benchmarks = get_campaign_benchmarks('ID-467')
+if benchmarks['found_in']:
+    print(f"CPA Plan: R$ {benchmarks['cpa_plan']:.2f}")
+```
+
 ---
 
 ## Solução de Problemas
@@ -338,6 +400,9 @@ Use o workflow `/dev`:
 | Skill não carrega | Verifique se está em `~/.config/opencode/skills/` |
 | Comando não funciona | Verifique se está em `~/.config/opencode/commands/` |
 | Dados inconsistentes | O sistema sinalizará automaticamente |
+| Dados desatualizados | Execute `refresh_all_data()` para forçar atualização |
+| Cache corrompido | Delete a pasta `architect/data/cache/` e recarregue |
+| Lentidão no carregamento | Verifique métricas com `get_cache_metrics()` |
 
 ---
 
@@ -365,11 +430,35 @@ Use o workflow `/dev`:
 - Melhoria: Sistema de padrões aprendidos
 - Melhoria: Feedback loop para melhoria contínua
 
+### v2.0 (2026-08-11)
+- Google Sheets v2.0 com cache inteligente
+- Cache em memória (TTL 5min) e em disco
+- Refresh automático (seletivo ou total)
+- Métricas de performance do cache
+- Dependências: `pandas` + `requests` (substitui `gspread`/`oauth2client`)
+- Documentação técnica completa em `GOOGLE_SHEETS_MULTI_INTEGRATION.md`
+
+---
+
+## Referências
+
+### Dependências (v2.0)
+```bash
+pip install pandas requests
+```
+
+### Links Úteis
+- Planilha: [Google Sheets D-1](https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/)
+- Documentação: [[Data/GOOGLE_SHEETS_MULTI_INTEGRATION]]
+- Integração: [[Data/Google Sheets Integration]]
+
 ---
 
 ## Links
 
 - [[Architecture/Architect Architecture v1]]
+- [[Data/Google Sheets Integration]]
+- [[Data/GOOGLE_SHEETS_MULTI_INTEGRATION]]
 - [[Agents/Odysseus]]
 - [[Agents/Sysyphus]]
 - [[Agents/Atena]]

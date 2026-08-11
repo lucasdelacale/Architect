@@ -84,19 +84,70 @@ Também utilizo o OpenCode para:
 
 ## Fonte de dados
 
-Utilizo uma base de dados oficial de campanhas, atualizada diariamente:
+Utilizo uma base de dados oficial de campanhas, atualizada diariamente, com duas fontes de acesso:
 
-**`WPP_Smart-Fit-NET_DataBase_D-1.xlsx`**
+### Fonte Primária: Google Sheets (v2.0 com Cache)
 
-* **Path**: `C:\Users\lucas.martins\OneDrive - insidemedia.net\Documentos\Obsidian Vault\Campanhas\Dados\Database\WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
-* **Atualização**: diária (D-1) pelo usuário.
-* **Status**: fonte oficial de dados/resultados para consultas, estudos, cruzamentos e otimizações.
+- **Google Sheets público**: [https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/](https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/)
+- **Script multi-aba (v2.0)**: `architect/data/google_sheets_multi_loader.py`
+  - Cache em memória (TTL 5min) e em disco (`architect/data/cache/`)
+  - Refresh automático (seletivo por plataforma ou total)
+  - Métricas de performance (hits, misses, taxa de acerto)
+- **Script legado**: `architect/data/google_sheets_loader.py`
+- **Configuração**: `architect/config/sheets_config.json`
+- **Dependências**: `pandas`, `requests`
+- **Vantagens**: cache inteligente, atualização automática, refresh sob demanda, acesso colaborativo
+- **Compatibilidade**: estrutura idêntica à base Excel anterior
+
+### Abas de Controle (v2.0 — Multi-aba com Cache)
+
+A planilha Google Sheets foi expandida para incluir abas de controle por plataforma. O script v2.0 adiciona cache inteligente para otimizar performance.
+
+| Aba | Plataforma | Colunas de Controle |
+|---|---|---|
+| `Database` | Dados D-1 (resultados) | 14 colunas (A–N) |
+| `Google Ads \| NET` | Google Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `DV360 \| NET` | DV360 | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `FACEBOOK Ads\| NET` | Meta Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `TIKTOK Ads\| NET` | TikTok Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `BING Ads\| NET` | Bing Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+
+**Vantagem**: benchmarks integrados para análise de performance vs. planejado.
+
+### Backup: Excel Local
+
+- **Arquivo**: `WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
+- **Path**: `C:\Users\lucas.martins\OneDrive - insidemedia.net\Documentos\Obsidian Vault\Campanhas\Dados\Database\WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
+- **Status**: mantido como backup e referência histórica
+
+### Instalação de Dependências (v2.0)
+
+O script de integração Google Sheets v2.0 requer as seguintes dependências Python:
+
+```bash
+# Instalar dependências
+pip install pandas requests
+
+# Ou usar requirements.txt
+echo "pandas>=1.3.0" >> requirements.txt
+echo "requests>=2.26.0" >> requirements.txt
+```
+
+**Notas:**
+- Python 3.8+ é necessário
+- As dependências `gspread` e `oauth2client` não são mais necessárias na v2.0
+- Cache é criado automaticamente em `architect/data/cache/` na primeira execução
+
+### Informações Gerais
+
+- **Atualização**: diária (D-1) pelo usuário.
+- **Status**: fonte oficial de dados/resultados para consultas, estudos, cruzamentos e otimizações.
 
 ## Estrutura
 
-* Aba única `DataBase_D-1`.
-* Granularidade diária por veículo/campanha.
-* ~18.400 linhas, 14 colunas.
+* Planilha com abas separadas (dados + controle por plataforma).
+* Aba `Database`: granularidade diária por veículo/campanha, ~18.400 linhas, 14 colunas.
+* Abas de controle: planejamento por plataforma (Google Ads, DV360, Meta, TikTok, Bing).
 
 ## Colunas
 

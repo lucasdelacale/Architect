@@ -48,6 +48,17 @@ Usuário → Odysseus (planeja) → Sysyphus (executa)
 - Skills: `.opencode/skills/`
 - Referências: `references` no opencode.jsonc
 
+## Fonte de Dados
+
+- **Primária**: Google Sheets público (v2.0 com cache inteligente)
+  - Link: [https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/](https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/)
+  - Script: `architect/data/google_sheets_multi_loader.py` (v2.0 — cache, refresh, métricas)
+  - Config: `architect/config/sheets_config.json`
+  - Dependências: `pip install pandas requests`
+  - Cache: em memória (TTL 5min) e em disco (`architect/data/cache/`)
+- **Backup**: Excel local (`WPP_Smart-Fit-NET_DataBase_D-1.xlsx`)
+- **Documentação detalhada**: [[Data/Google Sheets Integration]] | [[Data/GOOGLE_SHEETS_MULTI_INTEGRATION]]
+
 ## Skills Disponíveis
 
 | Skill | Função |

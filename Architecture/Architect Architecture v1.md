@@ -195,21 +195,49 @@ C:\Users\lucas.martins\OneDrive - insidemedia.net\Documentos\Obsidian Vault\Arch
 
 
 
-O Architect possui uma única base de dados oficial de campanhas, atualizada diariamente pelo usuário:
+O Architect possui uma base de dados oficial de campanhas, atualizada diariamente, com duas fontes de acesso:
 
 
 
-**`WPP_Smart-Fit-NET_DataBase_D-1.xlsx`**
+### Fonte Primária: Google Sheets (v2.0 com Cache)
 
+- **Google Sheets público**: [https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/](https://docs.google.com/spreadsheets/d/1qJn7qBhEmKV5wbsqrDQ-9o5WKQZ2x5EcZNanDNDwzM4/)
+- **Script multi-aba (v2.0)**: `architect/data/google_sheets_multi_loader.py`
+  - Cache em memória (TTL 5min) e em disco (JSON persistido)
+  - Refresh automático (seletivo por plataforma ou total)
+  - Métricas de performance (hits, misses, taxa de acerto)
+- **Script legado**: `architect/data/google_sheets_loader.py`
+- **Configuração**: `architect/config/sheets_config.json`
+- **Dependências**: `pandas`, `requests`
+- **Vantagens**: cache inteligente, atualização automática, refresh sob demanda, acesso colaborativo
+- **Compatibilidade**: estrutura idêntica à base Excel anterior
 
+### Abas de Controle (v2.0 — Multi-aba com Cache)
 
+A planilha Google Sheets foi expandida para incluir abas de controle por plataforma, permitindo benchmarks integrados de performance vs. planejado. O script v2.0 adiciona cache inteligente e refresh automático.
+
+| Aba | Plataforma | Colunas de Controle |
+|---|---|---|
+| `Database` | Dados D-1 (resultados) | 14 colunas (A–N) |
+| `Google Ads \| NET` | Google Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `DV360 \| NET` | DV360 | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `FACEBOOK Ads\| NET` | Meta Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `TIKTOK Ads\| NET` | TikTok Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+| `BING Ads\| NET` | Bing Ads | Projetado, CPA Plan, Conversões Plan, Pacing |
+
+**Vantagem**: permite cruzar dados reais (D-1) com planejamento (controle) para análise de performance vs. meta.
+
+### Backup: Excel Local
+
+- **Arquivo**: `WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
 - **Path**: `C:\Users\lucas.martins\OneDrive - insidemedia.net\Documentos\Obsidian Vault\Campanhas\Dados\Database\WPP_Smart-Fit-NET_DataBase_D-1.xlsx`
+- **Status**: mantido como backup e referência histórica
+
+### Informações Gerais
 
 - **Atualização**: diária (D-1) pelo usuário.
-
 - **Status**: fonte oficial de dados/resultados para consultas, estudos, cruzamentos e otimizações.
-
-- **Estrutura**: aba única `DataBase_D-1`, granularidade diária por veículo/campanha, ~18,4 mil linhas, 14 colunas.
+- **Estrutura**: planilha com abas separadas (dados + controle por plataforma), granularidade diária por veículo/campanha, ~18,4 mil linhas na aba Database.
 
 
 
@@ -454,6 +482,10 @@ A escolha do modelo de cada sessão é responsabilidade do usuário, via TUI.
 
 
 - [[Install/Architect Install 1.0]]
+
+- [[Data/Google Sheets Integration]]
+
+- [[Data/GOOGLE_SHEETS_MULTI_INTEGRATION]]
 
 - [[Agents/Odysseus]]
 
