@@ -5,7 +5,7 @@ Integração com múltiplas abas de uma planilha Google Sheets pública.
 Este módulo fornece funções para carregar dados de performance (D-1)
 e dados de controle por plataforma de mídia digital.
 
-Versão: 2.0 - Adicionado cache em memória e disco, refresh automático e métricas.
+Versão: 3.0 - Adicionado tratamento de linha de total da plataforma.
 """
 
 import json
@@ -140,7 +140,9 @@ class SheetCache:
             value: DataFrame para salvar
         """
         try:
-            cache_file = self.cache_dir / f"{key}.json"
+            # Limpar caracteres especiais do nome do arquivo
+            safe_key = "".join(c for c in key if c.isalnum() or c in ('-', '_')).strip()
+            cache_file = self.cache_dir / f"{safe_key}.json"
             data = {
                 'data': value.to_json(orient='records', date_format='iso'),
                 'columns': value.columns.tolist(),
@@ -285,6 +287,7 @@ COLUMN_MAPPING = {
     "Diferen\u00e7a Plan X Realizado": "Diferença Plan X Realizado",
     " compensado": "compensado",
     " \ncompensado": "compensado",
+    "compensado": "compensado",
 }
 
 
@@ -346,7 +349,7 @@ def _load_sheet_to_dataframe(
     
     try:
         start_time = time.time()
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=60)
         response.raise_for_status()
         
         # Verificar se o conteúdo é CSV válido
@@ -418,14 +421,17 @@ def load_d1_data(use_cache: bool = True) -> pd.DataFrame:
 
 def load_platform_control(platform_name: str, use_cache: bool = True) -> pd.DataFrame:
     """
-    Carrega dados de controle de uma plataforma específica.
+    Carrega dados de controle de uma plataforma específica, excluindo a linha de total.
+    
+    A linha 2 (após cabeçalho) é sempre o total da plataforma e será marcada
+    com flag `is_total=True`. Esta função retorna apenas as campanhas individuais.
     
     Args:
         platform_name: Nome da plataforma (google, dv360, facebook, tiktok, bing)
         use_cache: Se deve usar cache (padrão: True)
     
     Returns:
-        DataFrame com dados de controle da plataforma
+        DataFrame com dados de controle das campanhas individuais (exclui linha de total)
     """
     platform_lower = platform_name.lower()
     
@@ -453,21 +459,323 @@ def load_platform_control(platform_name: str, use_cache: bool = True) -> pd.Data
             logger.warning(f"Colunas de controle faltando: {missing_cols}")
             # Tentar com GID como fallback
             logger.info("Tentando com GID como fallback...")
-            return _load_sheet_to_dataframe(
+            df = _load_sheet_to_dataframe(
                 gid=PLATFORM_GIDS[platform_lower],
                 columns=CONTROL_COLUMNS,
                 use_cache=use_cache
             )
         
+        # Separar linha de total das campanhas individuais
+        # A linha 2 (índice 0) é sempre o total da plataforma
+        if len(df) > 1:
+            logger.info(f"Identificada linha de total na plataforma {platform_name}")
+            # Marcar linha de total
+            df['is_total'] = False
+            df.iloc[0, df.columns.get_loc('is_total')] = True
+            
+            # Retornar apenas campanhas individuais (excluindo linha de total)
+            campaign_details = df.iloc[1:].copy()
+            logger.info(f"Retornando {len(campaign_details)} campanhas individuais")
+            return campaign_details
+        
+        # Se houver apenas uma linha, retornar como está (sem flag de total)
+        logger.warning(f"Plataforma {platform_name} possui apenas uma linha de dados")
         return df
         
     except Exception as e:
         logger.warning(f"Falha com nome da aba, tentando com GID: {e}")
-        return _load_sheet_to_dataframe(
+        df = _load_sheet_to_dataframe(
             gid=PLATFORM_GIDS[platform_lower],
             columns=CONTROL_COLUMNS,
             use_cache=use_cache
         )
+        
+        # Separar linha de total das campanhas individuais
+        if len(df) > 1:
+            logger.info(f"Identificada linha de total na plataforma {platform_name}")
+            df['is_total'] = False
+            df.iloc[0, df.columns.get_loc('is_total')] = True
+            
+            campaign_details = df.iloc[1:].copy()
+            logger.info(f"Retornando {len(campaign_details)} campanhas individuais")
+            return campaign_details
+        
+        return df
+
+
+def load_platform_totals(platform_name: str, use_cache: bool = True) -> pd.DataFrame:
+    """
+    Retorna DataFrame com apenas o total da plataforma.
+    
+    A linha 2 (após cabeçalho) é sempre o total da plataforma e será marcada
+    com flag `is_total=True`.
+    
+    Args:
+        platform_name: Nome da plataforma (google, dv360, facebook, tiktok, bing)
+        use_cache: Se deve usar cache (padrão: True)
+    
+    Returns:
+        DataFrame com apenas a linha de total da plataforma
+    """
+    platform_lower = platform_name.lower()
+    
+    if platform_lower not in PLATFORM_GIDS:
+        raise ValueError(
+            f"Plataforma '{platform_name}' não reconhecida. "
+            f"Opções: {list(PLATFORM_GIDS.keys())}"
+        )
+    
+    logger.info(f"Carregando totais da plataforma: {platform_name}")
+    
+    # Tentar primeiro com nome da aba (mais confiável)
+    try:
+        df = _load_sheet_to_dataframe(
+            sheet_name=PLATFORM_SHEET_NAMES[platform_lower],
+            columns=CONTROL_COLUMNS,
+            use_cache=use_cache
+        )
+        
+        # Verificar se as colunas esperadas estão presentes
+        expected_cols = ["Campanha", "Funil", "Nº", "Projetado", "CPA Plan", "Conversões Plan"]
+        missing_cols = [col for col in expected_cols if col not in df.columns]
+        
+        if missing_cols:
+            logger.warning(f"Colunas de controle faltando: {missing_cols}")
+            # Tentar com GID como fallback
+            logger.info("Tentando com GID como fallback...")
+            df = _load_sheet_to_dataframe(
+                gid=PLATFORM_GIDS[platform_lower],
+                columns=CONTROL_COLUMNS,
+                use_cache=use_cache
+            )
+        
+        # Extrair linha de total (índice 0)
+        if len(df) > 1:
+            logger.info(f"Extraindo linha de total da plataforma {platform_name}")
+            platform_totals = df.iloc[0:1].copy()
+            platform_totals['is_total'] = True
+            logger.info(f"Total da plataforma extraído com sucesso")
+            return platform_totals
+        
+        # Se houver apenas uma linha, retornar como está
+        logger.warning(f"Plataforma {platform_name} possui apenas uma linha de dados")
+        df['is_total'] = True
+        return df
+        
+    except Exception as e:
+        logger.warning(f"Falha com nome da aba, tentando com GID: {e}")
+        df = _load_sheet_to_dataframe(
+            gid=PLATFORM_GIDS[platform_lower],
+            columns=CONTROL_COLUMNS,
+            use_cache=use_cache
+        )
+        
+        # Extrair linha de total
+        if len(df) > 1:
+            logger.info(f"Extraindo linha de total da plataforma {platform_name}")
+            platform_totals = df.iloc[0:1].copy()
+            platform_totals['is_total'] = True
+            return platform_totals
+        
+        df['is_total'] = True
+        return df
+
+
+def get_platform_summary(platform_name: str, use_cache: bool = True) -> Dict[str, Any]:
+    """
+    Retorna resumo completo: total + campanhas.
+    
+    Args:
+        platform_name: Nome da plataforma (google, dv360, facebook, tiktok, bing)
+        use_cache: Se deve usar cache (padrão: True)
+    
+    Returns:
+        Dicionário com:
+        - totals: DataFrame com total da plataforma
+        - campaigns: DataFrame com campanhas individuais
+        - campaign_count: Número de campanhas
+    """
+    logger.info(f"Gerando resumo completo da plataforma: {platform_name}")
+    
+    totals = load_platform_totals(platform_name, use_cache)
+    campaigns = load_platform_control(platform_name, use_cache)
+    
+    return {
+        'totals': totals,
+        'campaigns': campaigns,
+        'campaign_count': len(campaigns)
+    }
+
+
+def calculate_platform_metrics(platform_name: str, use_cache: bool = True) -> Dict[str, Any]:
+    """
+    Calcula métricas da plataforma usando totais corretos.
+    
+    Métricas que são SOMA (acumulado):
+    - Projetado, Custo, Sobra, Consumo ontem, Investimento Diarizado,
+    - MTD, Linear, Diferença Plan X Realizado, Compensado, Conv., Conversões Plan
+    
+    Métricas que são MÉDIA:
+    - Pacing (%), % Desvio Consumo X planejado, CPA, CPA Plan
+    
+    Args:
+        platform_name: Nome da plataforma (google, dv360, facebook, tiktok, bing)
+        use_cache: Se deve usar cache (padrão: True)
+    
+    Returns:
+        Dicionário com métricas calculadas corretamente
+    """
+    logger.info(f"Calculando métricas da plataforma: {platform_name}")
+    
+    totals = load_platform_totals(platform_name, use_cache).iloc[0]
+    campaigns = load_platform_control(platform_name, use_cache)
+    
+    # Função auxiliar para converter valores brasileiros para float
+    def parse_brazilian_currency(value, default=0):
+        """Converte valores como 'R$ 2.547.460,45' para float."""
+        if pd.isna(value):
+            return default
+        
+        if isinstance(value, (int, float)):
+            return float(value)
+        
+        if isinstance(value, str):
+            # Remover R$, espaços e pontos (separador de milhar)
+            # Substituir vírgula por ponto (separador decimal)
+            cleaned = value.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+            try:
+                return float(cleaned)
+            except ValueError:
+                return default
+        
+        return default
+    
+    def parse_percentage(value, default=0):
+        """Converte valores como '27,38%' para float."""
+        if pd.isna(value):
+            return default
+        
+        if isinstance(value, (int, float)):
+            return float(value)
+        
+        if isinstance(value, str):
+            # Remover % e espaços
+            cleaned = value.replace('%', '').replace(' ', '').replace(',', '.')
+            try:
+                return float(cleaned)
+            except ValueError:
+                return default
+        
+        return default
+    
+    def to_float(value, default=0):
+        """Tenta converter para float, tratando valores brasileiros."""
+        try:
+            if pd.isna(value):
+                return default
+            return float(value)
+        except (ValueError, TypeError):
+            return default
+    
+    # Métricas de soma (já estão nos totais)
+    investimento_total = parse_brazilian_currency(totals.get('Projetado', 0))
+    custo_total = parse_brazilian_currency(totals.get('Custo', 0))
+    sobra_total = parse_brazilian_currency(totals.get('Sobra', 0))
+    consumo_ontem_total = parse_brazilian_currency(totals.get('Consumo ontem', 0))
+    investimento_diarizado_total = parse_brazilian_currency(totals.get('Investimento Diarizado', 0))
+    mtd_total = parse_brazilian_currency(totals.get('MTD', 0))
+    linear_total = parse_brazilian_currency(totals.get('Linear', 0))
+    diferenca_plan_realizado = parse_brazilian_currency(totals.get('Diferença Plan X Realizado', 0))
+    compensado_total = parse_brazilian_currency(totals.get('compensado', 0))
+    
+    # Para conversões, tratar formato brasileiro (6.168 = 6168)
+    def parse_conversions(value, default=0):
+        """Converte valores como '6.168' para 6168."""
+        if pd.isna(value):
+            return default
+        
+        if isinstance(value, (int, float)):
+            return float(value)
+        
+        if isinstance(value, str):
+            # Se contém ponto e vírgula, é formato brasileiro
+            if '.' in value and ',' in value:
+                # Ex: 1.234,56 -> 1234.56
+                cleaned = value.replace('.', '').replace(',', '.')
+            elif '.' in value:
+                # Pode ser 6.168 (6168) ou 6.168 (6.168)
+                # Se após o ponto há apenas 3 dígitos, é separador de milhar
+                parts = value.split('.')
+                if len(parts) == 2 and len(parts[1]) == 3:
+                    # Formato: 6.168 (6168)
+                    cleaned = value.replace('.', '')
+                else:
+                    # Formato: 6.168 (6.168)
+                    cleaned = value
+            elif ',' in value:
+                # Formato: 6,168 (6.168)
+                cleaned = value.replace(',', '.')
+            else:
+                cleaned = value
+            
+            try:
+                return float(cleaned)
+            except ValueError:
+                return default
+        
+        return default
+    
+    conv_total = parse_conversions(totals.get('Conv.', 0))
+    conv_plan_total = parse_conversions(totals.get('Conversões Plan', 0))
+    
+    # Métricas de média (calcular das campanhas)
+    # Converter colunas para numérico antes de calcular média
+    pacing_medio = 0
+    desvio_medio = 0
+    cpa_medio = 0
+    cpa_plan_medio = 0
+    
+    if 'Pacing' in campaigns.columns:
+        pacing_numeric = campaigns['Pacing'].apply(lambda x: parse_percentage(x))
+        pacing_medio = pacing_numeric.mean() if not pacing_numeric.isna().all() else 0
+    
+    if '% Desvio Consumo X planejado' in campaigns.columns:
+        desvio_numeric = campaigns['% Desvio Consumo X planejado'].apply(lambda x: parse_percentage(x))
+        desvio_medio = desvio_numeric.mean() if not desvio_numeric.isna().all() else 0
+    
+    if 'CPA' in campaigns.columns:
+        cpa_numeric = campaigns['CPA'].apply(lambda x: parse_brazilian_currency(x))
+        cpa_medio = cpa_numeric.mean() if not cpa_numeric.isna().all() else 0
+    
+    if 'CPA Plan' in campaigns.columns:
+        cpa_plan_numeric = campaigns['CPA Plan'].apply(lambda x: parse_brazilian_currency(x))
+        cpa_plan_medio = cpa_plan_numeric.mean() if not cpa_plan_numeric.isna().all() else 0
+    
+    # Métricas derivadas
+    desvio_total = ((custo_total - investimento_total) / investimento_total * 100) if investimento_total > 0 else 0
+    roi_plan = conv_plan_total / investimento_total if investimento_total > 0 else 0
+    roi_real = conv_total / custo_total if custo_total > 0 else 0
+    
+    return {
+        'investimento_projetado': investimento_total,
+        'investimento_realizado': custo_total,
+        'sobra': sobra_total,
+        'consumo_ontem': consumo_ontem_total,
+        'investimento_diarizado': investimento_diarizado_total,
+        'mtd': mtd_total,
+        'linear': linear_total,
+        'diferenca_plan_realizado': diferenca_plan_realizado,
+        'compensado': compensado_total,
+        'conversoes_realizadas': conv_total,
+        'conversoes_planejadas': conv_plan_total,
+        'pacing_medio': pacing_medio,
+        'desvio_medio': desvio_medio,
+        'cpa_medio': cpa_medio,
+        'cpa_plan_medio': cpa_plan_medio,
+        'desvio_percentual': desvio_total,
+        'roi_planejado': roi_plan,
+        'roi_realizado': roi_real
+    }
 
 
 def load_all_sheets_data(use_cache: bool = True) -> Tuple[pd.DataFrame, Dict[str, pd.DataFrame]]:

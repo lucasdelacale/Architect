@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0] - 2026-08-11
+
+### Added
+- Tratamento de linha de total da plataforma (linha 2 sempre é o total)
+- Função `load_platform_totals()`: retorna DataFrame com apenas o total da plataforma
+- Função `get_platform_summary()`: retorna resumo completo (total + campanhas)
+- Função `calculate_platform_metrics()`: calcula métricas corretas (soma para acumulados, média para performance)
+- Flag `is_total` para identificar linhas de total
+- Documentação atualizada em `Data/Google Sheets Integration.md` com seção "Estrutura das Abas de Controle"
+- Exemplos de uso para tratamento de totais
+
+### Changed
+- `load_platform_control()` agora exclui automaticamente a linha de total
+- Métricas de performance (Pacing, CPA, % Desvio) calculadas como média
+- Métricas acumuladas (Projetado, Custo, Conversões) extraídas do total
+
+### Fixed
+- Correção no cálculo de métricas que antes somavam totais incorretamente
+
 ## [2.0.0] - 2026-08-11
 
 ### Added

@@ -3,7 +3,7 @@
 **Tipo**: Integração de dados  
 **Data**: 2026-08-11  
 **Status**: Implementado  
-**Versão**: 2.0
+**Versão**: 3.0
 
 ---
 
@@ -39,6 +39,12 @@ Integração avançada com Google Sheets para acesso automatizado a múltiplas a
 - Função para forçar atualização de dados
 - Invalidação seletiva por plataforma
 - Logs de quando o cache foi atualizado
+
+### 6. Tratamento de Linha de Total
+- **Identificação automática**: Linha 2 (após cabeçalho) é sempre o total da plataforma
+- **Separação de dados**: DataFrame `platform_totals` (total) e `campaign_details` (campanhas)
+- **Flag is_total**: Indica se a linha é total ou campanha individual
+- **Métricas corretas**: Soma para métricas acumuladas, média para métricas de performance
 
 ---
 
@@ -133,6 +139,18 @@ Cada arquivo JSON contém:
 
 ## Estrutura da Planilha
 
+### Estrutura das Abas de Controle
+
+Cada aba de controle possui a seguinte estrutura:
+
+| Linha | Conteúdo | Descrição |
+|-------|----------|-----------|
+| 1 | Cabeçalho | Nomes das colunas |
+| 2 | **TOTAL da plataforma** | Soma ou média das campanhas |
+| 3+ | Campanhas individuais | Dados de cada campanha |
+
+**Importante**: A linha 2 é sempre o total da plataforma e será tratada separadamente pelo script.
+
 ### Abas Suportadas
 
 | Aba | GID | Conteúdo |
@@ -165,29 +183,29 @@ Cada arquivo JSON contém:
 
 ### Colunas Dados de Controle (Estrutura Real)
 
-| Coluna | Tipo | Descrição |
-|--------|------|-----------|
-| Campanha | string | Nome da campanha |
-| Funil | string | AWARENESS/CONSIDERAÇÃO/CONVERSÃO |
-| Tipo | string | Tipo da campanha |
-| Nº | string | ID da campanha |
-| Audiência | string | Segmentação de audiência |
-| Projetado | float | Investimento mensal planejado |
-| Custo | float | Investimento realizado |
-| Sobra | float | Diferença entre projetado e realizado |
-| Consumo ontem | float | Consumo do dia anterior |
-| Investimento Diarizado | float | Investimento diário |
-| Pacing | float | % do budget gasto |
-| MTD | float | Month to Date |
-| % Desvio Consumo X planejado | float | Percentual de desvio |
-| Diarizado ajustado | float | Investimento diário ajustado |
-| Linear | float | Referência linear |
-| Diferença Plan X Realizado | float | Diferença entre planejado e realizado |
-| compensado | float | Valor compensado |
-| CPA | float | CPA realizado |
-| Conv. | int | Conversões realizadas |
-| CPA Plan | float | CPA planejado |
-| Conversões Plan | int | Conversões planejadas |
+| Coluna | Tipo | Descrição | Tipo de Métrica |
+|--------|------|-----------|-----------------|
+| Campanha | string | Nome da campanha | - |
+| Funil | string | AWARENESS/CONSIDERAÇÃO/CONVERSÃO | - |
+| Tipo | string | Tipo da campanha | - |
+| Nº | string | ID da campanha | - |
+| Audiência | string | Segmentação de audiência | - |
+| Projetado | float | Investimento mensal planejado | **SOMA** |
+| Custo | float | Investimento realizado | **SOMA** |
+| Sobra | float | Diferença entre projetado e realizado | **SOMA** |
+| Consumo ontem | float | Consumo do dia anterior | **SOMA** |
+| Investimento Diarizado | float | Investimento diário | **SOMA** |
+| Pacing | float | % do budget gasto | **MÉDIA** |
+| MTD | float | Month to Date | **SOMA** |
+| % Desvio Consumo X planejado | float | Percentual de desvio | **MÉDIA** |
+| Diarizado ajustado | float | Investimento diário ajustado | - |
+| Linear | float | Referência linear | **SOMA** |
+| Diferença Plan X Realizado | float | Diferença entre planejado e realizado | **SOMA** |
+| compensado | float | Valor compensado | **SOMA** |
+| CPA | float | CPA realizado | **MÉDIA** |
+| Conv. | int | Conversões realizadas | **SOMA** |
+| CPA Plan | float | CPA planejado | **MÉDIA** |
+| Conversões Plan | int | Conversões planejadas | **SOMA** |
 
 ---
 
@@ -263,7 +281,10 @@ else:
 from architect.data.google_sheets_multi_loader import (
     load_all_sheets_data,
     get_campaign_benchmarks,
-    test_connection
+    test_connection,
+    load_platform_totals,
+    get_platform_summary,
+    calculate_platform_metrics
 )
 
 def main():
@@ -299,6 +320,32 @@ def main():
         print(f"Conversões Plan: {benchmarks['conv_plan']}")
     else:
         print("Campanha não encontrada")
+    
+    # 6. Exemplo de tratamento de linha de total
+    print(f"\n=== Exemplo de Tratamento de Total ===")
+    
+    # Carregar totais da plataforma Google
+    google_totals = load_platform_totals("google")
+    print(f"Total da plataforma Google:")
+    print(f"  Investimento Projetado: R$ {google_totals['Projetado'].iloc[0]:.2f}")
+    print(f"  Investimento Realizado: R$ {google_totals['Custo'].iloc[0]:.2f}")
+    
+    # Carregar resumo completo
+    google_summary = get_platform_summary("google")
+    print(f"\nResumo completo Google:")
+    print(f"  Total de campanhas: {google_summary['campaign_count']}")
+    
+    # Calcular métricas corretas
+    google_metrics = calculate_platform_metrics("google")
+    print(f"\nMétricas calculadas Google:")
+    print(f"  Investimento Projetado: R$ {google_metrics['investimento_projetado']:.2f}")
+    print(f"  Investimento Realizado: R$ {google_metrics['investimento_realizado']:.2f}")
+    print(f"  Conversões Realizadas: {google_metrics['conversoes_realizadas']}")
+    print(f"  Conversões Planejadas: {google_metrics['conversoes_planejadas']}")
+    print(f"  Pacing Médio: {google_metrics['pacing_medio']:.2f}%")
+    print(f"  CPA Médio: R$ {google_metrics['cpa_medio']:.2f}")
+    print(f"  ROI Planejado: {google_metrics['roi_planejado']:.4f}")
+    print(f"  ROI Realizado: {google_metrics['roi_realizado']:.4f}")
 
 if __name__ == "__main__":
     main()
@@ -345,7 +392,7 @@ pd.DataFrame  # DataFrame com dados de performance
 
 #### `load_platform_control(platform_name, use_cache=True)`
 
-Carrega dados de controle de uma plataforma.
+Carrega dados de controle de uma plataforma, excluindo a linha de total.
 
 **Parâmetros:**
 - `platform_name` (str): Nome da plataforma
@@ -354,11 +401,99 @@ Carrega dados de controle de uma plataforma.
 
 **Retorno:**
 ```python
-pd.DataFrame  # DataFrame com dados de controle
+pd.DataFrame  # DataFrame com campanhas individuais (exclui linha de total)
 ```
 
 **Exceções:**
 - `ValueError`: Plataforma não reconhecida
+
+**Nota:** A linha 2 (após cabeçalho) é sempre o total da plataforma e será excluída deste DataFrame.
+
+---
+
+#### `load_platform_totals(platform_name, use_cache=True)`
+
+Retorna DataFrame com apenas o total da plataforma.
+
+**Parâmetros:**
+- `platform_name` (str): Nome da plataforma
+  - Opções: `google`, `dv360`, `facebook`, `tiktok`, `bing`
+- `use_cache` (bool): Se deve usar cache (padrão: True)
+
+**Retorno:**
+```python
+pd.DataFrame  # DataFrame com apenas a linha de total da plataforma
+```
+
+**Exceções:**
+- `ValueError`: Plataforma não reconhecida
+
+**Nota:** A linha 2 (após cabeçalho) é sempre o total da plataforma e será marcada com `is_total=True`.
+
+---
+
+#### `get_platform_summary(platform_name, use_cache=True)`
+
+Retorna resumo completo: total + campanhas.
+
+**Parâmetros:**
+- `platform_name` (str): Nome da plataforma
+  - Opções: `google`, `dv360`, `facebook`, `tiktok`, `bing`
+- `use_cache` (bool): Se deve usar cache (padrão: True)
+
+**Retorno:**
+```python
+Dict[str, Any]
+# {
+#     'totals': pd.DataFrame,  # Total da plataforma
+#     'campaigns': pd.DataFrame,  # Campanhas individuais
+#     'campaign_count': int  # Número de campanhas
+# }
+```
+
+**Exceções:**
+- `ValueError`: Plataforma não reconhecida
+
+---
+
+#### `calculate_platform_metrics(platform_name, use_cache=True)`
+
+Calcula métricas da plataforma usando totais corretos.
+
+**Parâmetros:**
+- `platform_name` (str): Nome da plataforma
+  - Opções: `google`, `dv360`, `facebook`, `tiktok`, `bing`
+- `use_cache` (bool): Se deve usar cache (padrão: True)
+
+**Retorno:**
+```python
+Dict[str, Any]
+# {
+#     'investimento_projetado': float,
+#     'investimento_realizado': float,
+#     'sobra': float,
+#     'consumo_ontem': float,
+#     'investimento_diarizado': float,
+#     'mtd': float,
+#     'linear': float,
+#     'diferenca_plan_realizado': float,
+#     'compensado': float,
+#     'conversoes_realizadas': int,
+#     'conversoes_planejadas': int,
+#     'pacing_medio': float,
+#     'desvio_medio': float,
+#     'cpa_medio': float,
+#     'cpa_plan_medio': float,
+#     'desvio_percentual': float,
+#     'roi_planejado': float,
+#     'roi_realizado': float
+# }
+```
+
+**Exceções:**
+- `ValueError`: Plataforma não reconhecida
+
+**Nota:** Métricas de soma (acumulado) são extraídas diretamente do total. Métricas de média são calculadas a partir das campanhas individuais.
 
 ---
 
@@ -565,6 +700,7 @@ pip install pandas requests
 2. ~~**Configurar cache** para evitar requisições repetidas~~ ✅ Implementado
 3. **Adicionar autenticação** (caso planilha deixe de ser pública)
 4. ~~**Implementar refresh automático** periódico~~ ✅ Implementado
+5. ~~**Tratar linha de total** da plataforma~~ ✅ Implementado
 
 ---
 
@@ -584,3 +720,4 @@ pip install pandas requests
 | 2026-08-10 | Adicionadas funções de busca de benchmarks |
 | 2026-08-10 | Documentação completa |
 | 2026-08-11 | Versão 2.0: Adicionado cache em memória e disco, refresh automático e métricas |
+| 2026-08-11 | Versão 3.0: Adicionado tratamento de linha de total da plataforma |

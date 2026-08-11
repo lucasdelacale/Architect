@@ -2,8 +2,8 @@
 
 **Tipo**: Integração de dados
 **Data**: 2026-08-10
-**Última atualização**: 2026-08-11 (v2.0 — cache e refresh automático)
-**Versão**: 2.0
+**Última atualização**: 2026-08-11 (v2.1 — tratamento de linha de total)
+**Versão**: 2.1
 **Status**: Implementado
 
 ---
@@ -57,6 +57,28 @@ A planilha Google Sheets foi expandida para incluir abas de controle por platafo
 - **CPA Plan**: referência de custo por aquisição planejado
 - **Conversões Plan**: meta de conversões por plataforma
 - **Análise integrada**: permite identificar desvios sem necessidade de fontes externas
+
+### Estrutura das Abas de Controle
+
+Cada aba de controle (Google Ads | NET, etc.) segue esta estrutura:
+
+| Linha | Conteúdo |
+|-------|----------|
+| **1** | Cabeçalho (Campanha, Funil, Tipo, Nº, Projetado, Custo, etc.) |
+| **2** | **TOTAL da plataforma** (soma ou média das campanhas) |
+| **3+** | Campanhas individuais |
+
+#### Métricas que são SOMA (acumulado)
+- Projetado, Custo, Sobra, Consumo ontem
+- Investimento Diarizado, MTD, Linear
+- Diferença Plan X Realizado, Compensado
+- Conv. (Conversões), Conversões Plan
+
+#### Métricas que são MÉDIA
+- Pacing (%), % Desvio Consumo X planejado
+- CPA, CPA Plan
+
+> **⚠️ Importante**: A linha 2 é sempre o total da plataforma. O script `google_sheets_multi_loader.py` v2.1 trata automaticamente essa separação, extraindo totais e campanhas individuais em DataFrames distintos.
 
 ---
 
@@ -193,6 +215,30 @@ refresh_data("google")
 metrics = get_cache_metrics()
 ```
 
+### Via Script Python (tratamento de totais — v2.1)
+```python
+from architect.data.google_sheets_multi_loader import (
+    load_platform_totals,
+    get_platform_summary,
+    calculate_platform_metrics
+)
+
+# Carregar apenas o total da plataforma Google
+google_totals = load_platform_totals("google")
+print(f"Total investido: R$ {google_totals['Projetado'].iloc[0]:.2f}")
+
+# Carregar resumo completo (total + campanhas)
+google_summary = get_platform_summary("google")
+print(f"Campanhas: {google_summary['campaign_count']}")
+
+# Calcular métricas corretas (soma para acumulados, média para performance)
+google_metrics = calculate_platform_metrics("google")
+print(f"CPA Médio: R$ {google_metrics['cpa_medio']:.2f}")
+print(f"Pacing Médio: {google_metrics['pacing_medio']:.2f}%")
+```
+
+> **⚠️ Aviso**: Ao usar `load_platform_control()`, a linha de total é automaticamente excluída. Para obter o total, use `load_platform_totals()` ou `calculate_platform_metrics()`.
+
 ### Via Architect
 O script é integrado automaticamente quando o Architect precisa de dados D-1 ou de controle.
 
@@ -204,6 +250,8 @@ O script é integrado automaticamente quando o Architect precisa de dados D-1 ou
 - **Granularidade Database**: diária, por veículo/campanha
 - **Volume Database**: 10.239 linhas carregadas (teste inicial)
 - **Abas de controle**: dados de planejamento por plataforma
+- **Tratamento de totais**: v2.1 identifica automaticamente linha de total (linha 2)
+- **Métricas corretas**: soma para acumulados, média para métricas de performance
 - **Testes**: 9/9 aprovados (script principal)
 
 ---
@@ -301,3 +349,4 @@ Para problemas persistentes, verificar:
 | 2026-08-10 | Documentação completa e troubleshooting adicionado |
 | 2026-08-11 | Expansão para multi-aba. Script `google_sheets_multi_loader.py` criado. Abas de controle adicionadas (Google Ads, DV360, Meta, TikTok, Bing). Benchmarks integrados para análise vs. planejado. |
 | 2026-08-11 | **v2.0**: Cache em memória/disco, refresh automático, métricas de performance. Dependências migradas para `pandas` + `requests`. |
+| 2026-08-11 | **v2.1**: Tratamento de linha de total da plataforma. Funções `load_platform_totals`, `get_platform_summary`, `calculate_platform_metrics` adicionadas. |
