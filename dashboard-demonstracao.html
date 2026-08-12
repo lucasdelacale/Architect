@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Performance - Smart Fit NET</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        /* ============================================
+           DESIGN TOKENS
+           ============================================ */
+        :root {
+            --color-bg: #0a0a1a;
+            --color-surface: #1a1a2e;
+            --color-surface-alt: #16213e;
+            --color-primary: #0f3460;
+            --color-accent: #e94560;
+            --color-accent-hover: #ff6b81;
+            --color-text: #ffffff;
+            --color-text-muted: #a0a0b0;
+            --color-success: #00d4aa;
+            --color-warning: #ffd93d;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-1 {
+            grid-template-columns: 1fr;
+        }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .header {
+            background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary) 100%);
+            border-radius: var(--radius);
+            padding: 2rem 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--color-accent) 0%, transparent 70%);
+            opacity: 0.1;
+            transform: translate(50%, -50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(233, 69, 96, 0.15);
+            color: var(--color-accent);
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--color-accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header-subtitle {
+            color: var(--color-text-muted);
+            font-size: 1rem;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .meta-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        /* ============================================
+           SECTION TITLES
+           ============================================ */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 2rem 0 1.25rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--color-accent);
+            border-radius: 2px;
+        }
+
+        .section-title h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        /* ============================================
+           KPI CARDS
+           ============================================ */
+        .kpi-card {
+            background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(233, 69, 96, 0.3);
+        }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-accent), var(--color-primary));
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .kpi-card:hover::after {
+            opacity: 1;
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-icon.investment { background: rgba(15, 52, 96, 0.3); }
+        .kpi-icon.impressions { background: rgba(233, 69, 96, 0.15); }
+        .kpi-icon.clicks { background: rgba(0, 212, 170, 0.15); }
+        .kpi-icon.ctr { background: rgba(255, 217, 61, 0.15); }
+        .kpi-icon.cpc { background: rgba(15, 52, 96, 0.3); }
+        .kpi-icon.conversions { background: rgba(233, 69, 96, 0.15); }
+        .kpi-icon.cpa { background: rgba(255, 217, 61, 0.15); }
+        .kpi-icon.roas { background: rgba(0, 212, 170, 0.15); }
+
+        .kpi-label {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value.accent { color: var(--color-accent); }
+        .kpi-value.success { color: var(--color-success); }
+        .kpi-value.warning { color: var(--color-warning); }
+
+        .kpi-context {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .kpi-context .trend-up { color: var(--color-success); }
+        .kpi-context .trend-down { color: var(--color-accent); }
+
+        /* ============================================
+           CHARTS
+           ============================================ */
+        .chart-card {
+            background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .chart-subtitle {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 1.25rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.primary { background: var(--color-primary); }
+        .legend-dot.accent { background: var(--color-accent); }
+        .legend-dot.success { background: var(--color-success); }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* ============================================
+           TABLE
+           ============================================ */
+        .table-card {
+            background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-surface-alt) 100%);
+            border-radius: var(--radius);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem 1.75rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .table-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .table-subtitle {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem 1.25rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        thead th:not(:first-child) {
+            text-align: right;
+        }
+
+        tbody td {
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--color-border);
+            white-space: nowrap;
+        }
+
+        tbody td:not(:first-child) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        tbody tr {
+            transition: var(--transition);
+        }
+
+        tbody tr:hover {
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .channel-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .channel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .channel-dot.google { background: #4285f4; }
+        .channel-dot.meta { background: #1877f2; }
+        .channel-dot.tiktok { background: #00f2ea; }
+        .channel-dot.dv360 { background: #f06292; }
+
+        .badge {
+            display: inline-flex;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.roas-high {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--color-success);
+        }
+
+        .badge.roas-medium {
+            background: rgba(255, 217, 61, 0.15);
+            color: var(--color-warning);
+        }
+
+        tfoot td {
+            padding: 1rem 1.25rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid var(--color-accent);
+        }
+
+        tfoot td:not(:first-child) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================
+           INSIGHTS
+           ============================================ */
+        .insight-card {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(15, 52, 96, 0.1) 100%);
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .insight-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--color-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .insight-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        .insight-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
+        .insight-item::before {
+            content: '→';
+            color: var(--color-accent);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 2rem;
+            background: var(--color-surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1200px) {
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .dashboard {
+                padding: 1rem;
+            }
+
+            .grid-4, .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header-meta {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        /* ============================================
+           PRINT
+           ============================================ */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+
+            .kpi-card, .chart-card, .table-card, .header, .footer, .insight-card {
+                background: #fff;
+                border: 1px solid #ddd;
+                box-shadow: none;
+            }
+
+            .kpi-value, .chart-title, .table-title, .header h1 {
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+
+        <!-- ============================================
+             HEADER
+             ============================================ -->
+        <header class="header">
+            <div class="header-content">
+                <span class="header-badge">● Architect</span>
+                <h1>Dashboard de Performance — Smart Fit NET</h1>
+                <p class="header-subtitle">Análise consolidada de mídia digital e performance de campanhas</p>
+                <div class="header-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Período</span>
+                        <span class="meta-value">01 — 31 de Julho, 2026</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Cliente</span>
+                        <span class="meta-value">Smart Fit NET</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Gerado em</span>
+                        <span class="meta-value">06 de Agosto, 2026</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ============================================
+             KPIs
+             ============================================ -->
+        <div class="section-title">
+            <h2>Indicadores Principais</h2>
+        </div>
+
+        <div class="grid grid-4">
+            <!-- Investimento Total -->
+            <div class="kpi-card">
+                <div class="kpi-icon investment">💰</div>
+                <div class="kpi-label">Investimento Total</div>
+                <div class="kpi-value">R$ 125.400</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 12%</span> vs. mês anterior
+                </div>
+            </div>
+
+            <!-- Impressões -->
+            <div class="kpi-card">
+                <div class="kpi-icon impressions">👁️</div>
+                <div class="kpi-label">Impressões</div>
+                <div class="kpi-value accent">8.2M</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 8%</span> alcance ampliado
+                </div>
+            </div>
+
+            <!-- Cliques -->
+            <div class="kpi-card">
+                <div class="kpi-icon clicks">🖱️</div>
+                <div class="kpi-label">Cliques</div>
+                <div class="kpi-value success">245.600</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 15%</span> engajamento
+                </div>
+            </div>
+
+            <!-- CTR -->
+            <div class="kpi-card">
+                <div class="kpi-icon ctr">📊</div>
+                <div class="kpi-label">CTR Médio</div>
+                <div class="kpi-value warning">3.0%</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 0.3pp</span> acima da média
+                </div>
+            </div>
+
+            <!-- CPC Médio -->
+            <div class="kpi-card">
+                <div class="kpi-icon cpc">💸</div>
+                <div class="kpi-label">CPC Médio</div>
+                <div class="kpi-value">R$ 0,51</div>
+                <div class="kpi-context">
+                    <span class="trend-down">↓ 8%</span> custo otimizado
+                </div>
+            </div>
+
+            <!-- Conversões -->
+            <div class="kpi-card">
+                <div class="kpi-icon conversions">🎯</div>
+                <div class="kpi-label">Conversões</div>
+                <div class="kpi-value accent">4.890</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 22%</span> vs. meta
+                </div>
+            </div>
+
+            <!-- CPA Médio -->
+            <div class="kpi-card">
+                <div class="kpi-icon cpa">📉</div>
+                <div class="kpi-label">CPA Médio</div>
+                <div class="kpi-value warning">R$ 25,65</div>
+                <div class="kpi-context">
+                    <span class="trend-down">↓ 5%</span> eficiência
+                </div>
+            </div>
+
+            <!-- ROAS -->
+            <div class="kpi-card">
+                <div class="kpi-icon roas">🚀</div>
+                <div class="kpi-label">ROAS</div>
+                <div class="kpi-value success">4.2x</div>
+                <div class="kpi-context">
+                    <span class="trend-up">↑ 0.4x</span> retorno
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================
+             GRÁFICOS
+             ============================================ -->
+        <div class="section-title">
+            <h2>Análise por Canal</h2>
+        </div>
+
+        <div class="grid grid-2">
+            <!-- Gráfico de Barras: Investimento por Canal -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Investimento por Canal</div>
+                        <div class="chart-subtitle">Distribuição do orçamento em Julho/2026</div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot primary"></span>
+                            Investimento
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-investment"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico de Linha: Evolução Diária -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Evolução Diária (Últimos 7 Dias)</div>
+                        <div class="chart-subtitle">Investimento vs. Conversões — Julho/2026</div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot primary"></span>
+                            Investimento (R$)
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot accent"></span>
+                            Conversões
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-evolution"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================
+             TABELA COMPARATIVA
+             ============================================ -->
+        <div class="section-title">
+            <h2>Comparativo de Canais</h2>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <div class="table-title">Performance por Canal de Mídia</div>
+                <div class="table-subtitle">Métricas consolidadas — Julho, 2026</div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Canal</th>
+                            <th>Investimento</th>
+                            <th>Impressões</th>
+                            <th>Cliques</th>
+                            <th>CTR</th>
+                            <th>Conversões</th>
+                            <th>CPA</th>
+                            <th>ROAS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="channel-name">
+                                    <span class="channel-dot google"></span>
+                                    Google Search
+                                </div>
+                            </td>
+                            <td>R$ 45.000</td>
+                            <td>2,1M</td>
+                            <td>89.200</td>
+                            <td>4,2%</td>
+                            <td>1.850</td>
+                            <td>R$ 24,32</td>
+                            <td><span class="badge roas-high">4,8x</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="channel-name">
+                                    <span class="channel-dot meta"></span>
+                                    Meta Ads
+                                </div>
+                            </td>
+                            <td>R$ 38.000</td>
+                            <td>3,2M</td>
+                            <td>78.400</td>
+                            <td>2,4%</td>
+                            <td>1.420</td>
+                            <td>R$ 26,76</td>
+                            <td><span class="badge roas-medium">3,9x</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="channel-name">
+                                    <span class="channel-dot tiktok"></span>
+                                    TikTok Ads
+                                </div>
+                            </td>
+                            <td>R$ 25.400</td>
+                            <td>1,8M</td>
+                            <td>45.600</td>
+                            <td>2,5%</td>
+                            <td>890</td>
+                            <td>R$ 28,54</td>
+                            <td><span class="badge roas-medium">3,5x</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="channel-name">
+                                    <span class="channel-dot dv360"></span>
+                                    DV360
+                                </div>
+                            </td>
+                            <td>R$ 17.000</td>
+                            <td>1,1M</td>
+                            <td>32.400</td>
+                            <td>2,9%</td>
+                            <td>730</td>
+                            <td>R$ 23,29</td>
+                            <td><span class="badge roas-high">5,1x</span></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>TOTAL</td>
+                            <td>R$ 125.400</td>
+                            <td>8,2M</td>
+                            <td>245.600</td>
+                            <td>3,0%</td>
+                            <td>4.890</td>
+                            <td>R$ 25,65</td>
+                            <td><span class="badge roas-high">4,2x</span></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================
+             INSIGHTS
+             ============================================ -->
+        <div class="insight-card">
+            <div class="insight-header">
+                <div class="insight-icon">💡</div>
+                <div class="insight-title">Insights e Recomendações</div>
+            </div>
+            <ul class="insight-list">
+                <li class="insight-item">
+                    <strong>DV360</strong> apresenta o melhor ROAS (5,1x) com menor investimento — considere aumentar a verba em 20-30%.
+                </li>
+                <li class="insight-item">
+                    <strong>Google Search</strong> lidera em conversões absolutas (1.850) e tem o segundo melhor ROAS — canal estável para manter.
+                </li>
+                <li class="insight-item">
+                    <strong>TikTok Ads</strong> tem o CPA mais alto (R$ 28,54) — otimizar segmentação ou criativos para reduzir custo por aquisição.
+                </li>
+                <li class="insight-item">
+                    Tendência de <strong>crescimento consistente</strong> nos últimos 7 dias — investimento e conversões em trajetória ascendente.
+                </li>
+            </ul>
+        </div>
+
+        <!-- ============================================
+             FOOTER
+             ============================================ -->
+        <footer class="footer">
+            <span class="footer-text">
+                Dados fictícios para demonstração das capacidades do sistema Architect. 
+                Atualizado em 06/08/2026 às 14:30.
+            </span>
+            <span class="footer-brand">
+                ⚡ Powered by Architect
+            </span>
+        </footer>
+
+    </div>
+
+    <!-- ============================================
+         SCRIPTS — Chart.js
+         ============================================ -->
+    <script>
+        /* ============================================
+           CONFIGURAÇÕES GLOBAIS DO CHART.JS
+           ============================================ */
+        Chart.defaults.color = '#a0a0b0';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+        Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+        /* ============================================
+           GRÁFICO 1: INVESTIMENTO POR CANAL (BARRAS)
+           ============================================ */
+        const ctxInvestment = document.getElementById('chart-investment').getContext('2d');
+
+        new Chart(ctxInvestment, {
+            type: 'bar',
+            data: {
+                labels: ['Google Search', 'Meta Ads', 'TikTok Ads', 'DV360'],
+                datasets: [{
+                    label: 'Investimento (R$)',
+                    data: [45000, 38000, 25400, 17000],
+                    backgroundColor: [
+                        'rgba(66, 133, 244, 0.8)',
+                        'rgba(24, 119, 242, 0.8)',
+                        'rgba(0, 242, 234, 0.8)',
+                        'rgba(240, 98, 146, 0.8)'
+                    ],
+                    borderColor: [
+                        '#4285f4',
+                        '#1877f2',
+                        '#00f2ea',
+                        '#f06292'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1a2e',
+                        titleColor: '#fff',
+                        bodyColor: '#a0a0b0',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Investimento: R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return 'R$ ' + (value / 1000).toFixed(0) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        /* ============================================
+           GRÁFICO 2: EVOLUÇÃO DIÁRIA (LINHA)
+           ============================================ */
+        const ctxEvolution = document.getElementById('chart-evolution').getContext('2d');
+
+        new Chart(ctxEvolution, {
+            type: 'line',
+            data: {
+                labels: ['01/07', '02/07', '03/07', '04/07', '05/07', '06/07', '07/07'],
+                datasets: [
+                    {
+                        label: 'Investimento (R$)',
+                        data: [3800, 4100, 3950, 4200, 4500, 4350, 4600],
+                        borderColor: '#0f3460',
+                        backgroundColor: 'rgba(15, 52, 96, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#0f3460',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Conversões',
+                        data: [145, 162, 158, 170, 185, 178, 192],
+                        borderColor: '#e94560',
+                        backgroundColor: 'rgba(233, 69, 96, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#e94560',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a1a2e',
+                        titleColor: '#fff',
+                        bodyColor: '#a0a0b0',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.label.includes('Investimento')) {
+                                    return 'Investimento: R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                                }
+                                return 'Conversões: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 12 } }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return 'R$ ' + (value / 1000).toFixed(1) + 'k';
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

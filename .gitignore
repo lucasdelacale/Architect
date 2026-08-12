@@ -14,3 +14,18 @@ Desktop.ini
 
 # Logs
 *.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Cache
+Data/cache/

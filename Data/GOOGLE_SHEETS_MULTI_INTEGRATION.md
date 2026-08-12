@@ -3,7 +3,7 @@
 **Tipo**: Integração de dados  
 **Data**: 2026-08-11  
 **Status**: Implementado  
-**Versão**: 3.0
+**Versão**: 3.1
 
 ---
 
@@ -223,6 +223,80 @@ CPA = Investimento / conversoes_ga4
 | Conv. | int | Conversões realizadas | **SOMA** |
 | CPA Plan | float | CPA planejado | **MÉDIA** |
 | Conversões Plan | int | Conversões planejadas | **SOMA** |
+
+---
+
+## Análise com Benchmarks
+
+### Métricas por Fase do Funil
+
+| Funil | Métrica Principal | O que Avaliar |
+|-------|-------------------|---------------|
+| **Awareness/Alcance** | CPM, Impressões | Custo de exposição |
+| **Consideração** | Cliques, CPC, CTR | Eficiência de clique |
+| **Conversão** | CPA, Conversões | Custo de aquisição |
+
+> **Nota**: O CPA deve ser calculado usando `conversoes_ga4` (métrica do Google Analytics), conforme definido em [[Data/GOOGLE_SHEETS_MULTI_INTEGRATION#Métricas de Performance]].
+
+### Análise de Saúde (Conversão)
+
+Para campanhas de conversão, comparar o CPA realizado (GA4) com o CPA planejado (Plan):
+
+| Saúde | Condição | Ação Recomendada |
+|-------|----------|------------------|
+| **EXCELENTE** | CPA GA4 ≤ CPA Plan | Manter e escalar investimento |
+| **BOM** | CPA GA4 ≤ CPA Plan + 20% | Monitorar de perto |
+| **ATENÇÃO** | CPA GA4 ≤ CPA Plan + 50% | Otimizar segmentação e criativos |
+| **RUIM** | CPA GA4 > CPA Plan + 50% | Otimizar ou pausar campanha |
+| **SEM CONV** | Conversões GA4 = 0 | Investigar tracking e landing page |
+
+### Notas Importantes
+
+1. **ID nas campanhas**: Sempre usar o ID da campanha (coluna `id` ou `Nº`), não apenas o nome do veículo
+2. **Facebook**: A aba de controle do Facebook **não possui** coluna "CPA Plan" — usar apenas dados D-1
+3. **TikTok**: A aba de controle do TikTok **possui** coluna "CPA Plan"
+4. **Google/DV360**: Abas de controle possuem coluna "CPA Plan"
+
+### Exemplo de Análise
+
+```python
+from architect.data.google_sheets_multi_loader import load_platform_control, load_d1_data
+
+# Carregar dados de controle do Google
+google_control = load_platform_control("google")
+
+# Carregar dados D-1
+d1_data = load_d1_data()
+
+# Para cada campanha de conversão, verificar saúde
+for _, campaign in google_control.iterrows():
+    if campaign['Funil'] == 'CONVERSÃO':
+        campaign_id = campaign['Nº']
+        cpa_plan = campaign['CPA Plan']
+        
+        # Buscar CPA realizado nos dados D-1
+        d1_campaign = d1_data[d1_data['id'] == campaign_id]
+        if not d1_campaign.empty:
+            investimento = d1_campaign['Investimento'].sum()
+            conversoes = d1_campaign['conversoes_ga4'].sum()
+            
+            if conversoes > 0:
+                cpa_ga4 = investimento / conversoes
+                
+                # Classificar saúde
+                if cpa_ga4 <= cpa_plan:
+                    status = "EXCELENTE"
+                elif cpa_ga4 <= cpa_plan * 1.2:
+                    status = "BOM"
+                elif cpa_ga4 <= cpa_plan * 1.5:
+                    status = "ATENÇÃO"
+                else:
+                    status = "RUIM"
+                
+                print(f"{campaign_id}: CPA GA4 R${cpa_ga4:.2f} vs Plan R${cpa_plan:.2f} → {status}")
+            else:
+                print(f"{campaign_id}: SEM CONVERSões GA4 - investigar tracking")
+```
 
 ---
 
@@ -726,6 +800,7 @@ pip install pandas requests
 - [[Data/Google Sheets Integration]]
 - [[Data/Fonte de dados oficial - WPP Smart-Fit-NET D-1]]
 - [[Architecture/Architect Architecture v1]]
+- [[Skills/Marketing Analytics]]
 
 ---
 
@@ -739,3 +814,4 @@ pip install pandas requests
 | 2026-08-11 | Versão 2.0: Adicionado cache em memória e disco, refresh automático e métricas |
 | 2026-08-11 | Versão 3.0: Adicionado tratamento de linha de total da plataforma |
 | 2026-08-11 | Adicionada seção "Métricas de Performance" com definição de CPA usando `conversoes_ga4` e distinção de `instalacoes`. |
+| 2026-08-11 | Adicionada seção "Análise com Benchmarks" com métricas por fase do funil, tabela de saúde (CPA GA4 vs CPA Plan) e notas sobre disponibilidade de colunas por plataforma. |
