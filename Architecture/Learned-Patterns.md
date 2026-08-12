@@ -40,6 +40,7 @@
 |---|---|---|---|---|---|
 | D001 | Investimento negativo indica erro de upload | Base D-1 | - | - | - |
 | D002 | Conversões = 0 com impressões > 10k sugere problema de tracking | Base D-1 | - | - | - |
+| D003 | CPA deve ser calculado com `conversoes_ga4`, não com `instalacoes` | Base D-1 | Documentação atualizada, 2026-08-11 | 2026-08-11 | - |
 
 ---
 
@@ -53,7 +54,7 @@
 
 ## Estatísticas
 
-- Total de padrões ativos: 0
+- Total de padrões ativos: 7
 - Padrões validados: 0
 - Padrões descartados: 0
-- Último registro: -
+- Último registro: 2026-08-11

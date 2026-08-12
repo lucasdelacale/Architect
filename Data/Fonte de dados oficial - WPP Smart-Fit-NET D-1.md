@@ -43,6 +43,29 @@
 
 ---
 
+## Métricas Importantes
+
+| Métrica | Coluna | Descrição |
+|---------|--------|-----------|
+| **CPA** | `conversoes_ga4` | Custo por conversão (Google Analytics) |
+| **Instalações** | `instalacoes` | Downloads do aplicativo (métrica separada) |
+| **Investimento** | `Investimento` | Custo total da campanha |
+
+### Fórmula do CPA
+
+```
+CPA = Investimento / conversoes_ga4
+```
+
+### Nota sobre Instalações
+
+- As instalações são métricas separadas de conversões
+- Representam downloads do aplicativo
+- Não devem ser somadas com conversões para calcular o CPA
+- Usar apenas `conversoes_ga4` no numerador do cálculo
+
+---
+
 ## Colunas
 
 | Col | Campo | Descrição |
@@ -117,3 +140,4 @@
 | 2026-08-10 | Adicionada integração com Google Sheets como fonte primária. Script `google_sheets_loader.py` e configuração `sheets_config.json` criados. Excel mantido como backup. |
 | 2026-08-11 | Expansão para multi-aba. Script `google_sheets_multi_loader.py` criado. Abas de controle adicionadas (Google Ads, DV360, Meta, TikTok, Bing). Benchmarks integrados para análise vs. planejado. |
 | 2026-08-11 | **v2.0**: Cache em memória/disco, refresh automático, métricas de performance. Script multi-aba consolidado como fonte primária. |
+| 2026-08-11 | Adicionada seção "Métricas Importantes" com definição correta de CPA (usa `conversoes_ga4`) e distinção de `instalacoes`. |

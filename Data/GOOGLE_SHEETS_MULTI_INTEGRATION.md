@@ -162,6 +162,23 @@ Cada aba de controle possui a seguinte estrutura:
 | TIKTOK Ads\| NET | - | Controle TikTok |
 | BING Ads\| NET | - | Controle Bing |
 
+### Métricas de Performance
+
+| Métrica | Coluna | Descrição |
+|---------|--------|-----------|
+| **CPA** | `conversoes_ga4` | Custo por conversão (Google Analytics) |
+| **Instalações** | `instalacoes` | Downloads do aplicativo (métrica separada) |
+| **Investimento** | `Investimento` | Custo total da campanha |
+
+**Fórmula do CPA:**
+```
+CPA = Investimento / conversoes_ga4
+```
+
+> **⚠️ Importante**: O CPA é calculado usando `conversoes_ga4` (métrica do Google Analytics). As `instalacoes` são métricas separadas para downloads do app e não devem ser somadas com conversões para calcular o CPA.
+
+---
+
 ### Colunas Dados D-1
 
 | Coluna | Tipo | Descrição |
@@ -721,3 +738,4 @@ pip install pandas requests
 | 2026-08-10 | Documentação completa |
 | 2026-08-11 | Versão 2.0: Adicionado cache em memória e disco, refresh automático e métricas |
 | 2026-08-11 | Versão 3.0: Adicionado tratamento de linha de total da plataforma |
+| 2026-08-11 | Adicionada seção "Métricas de Performance" com definição de CPA usando `conversoes_ga4` e distinção de `instalacoes`. |

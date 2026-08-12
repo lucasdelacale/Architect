@@ -58,6 +58,23 @@ A planilha Google Sheets foi expandida para incluir abas de controle por platafo
 - **Conversões Plan**: meta de conversões por plataforma
 - **Análise integrada**: permite identificar desvios sem necessidade de fontes externas
 
+### Métricas Importantes
+
+| Métrica | Coluna | Descrição |
+|---------|--------|-----------|
+| **CPA** | `conversoes_ga4` | Custo por conversão (Google Analytics) |
+| **Instalações** | `instalacoes` | Downloads do aplicativo (métrica separada) |
+| **Investimento** | `Investimento` | Custo total da campanha |
+
+**Fórmula do CPA:**
+```
+CPA = Investimento / conversoes_ga4
+```
+
+> **⚠️ Nota**: As instalações são métricas separadas de conversões e não devem ser somadas para calcular o CPA. Usar apenas `conversoes_ga4`.
+
+---
+
 ### Estrutura das Abas de Controle
 
 Cada aba de controle (Google Ads | NET, etc.) segue esta estrutura:
@@ -350,3 +367,4 @@ Para problemas persistentes, verificar:
 | 2026-08-11 | Expansão para multi-aba. Script `google_sheets_multi_loader.py` criado. Abas de controle adicionadas (Google Ads, DV360, Meta, TikTok, Bing). Benchmarks integrados para análise vs. planejado. |
 | 2026-08-11 | **v2.0**: Cache em memória/disco, refresh automático, métricas de performance. Dependências migradas para `pandas` + `requests`. |
 | 2026-08-11 | **v2.1**: Tratamento de linha de total da plataforma. Funções `load_platform_totals`, `get_platform_summary`, `calculate_platform_metrics` adicionadas. |
+| 2026-08-11 | Adicionada seção "Métricas Importantes" com definição de CPA usando `conversoes_ga4` e distinção de `instalacoes`. |
