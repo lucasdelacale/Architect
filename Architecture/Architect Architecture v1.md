@@ -54,9 +54,9 @@ Princípios:
 
 opencode.jsonc                          # config central (default_agent, references, permissions)
 
-agents/                                 # 3 modos de execução + 9 subagentes
+agents/                                 # 4 modos de execução + 11 subagentes
 
-skills/                                 # 6 skills
+skills/                                 # 8 skills (incluindo skill-router)
 
 commands/                               # 7 workflows
 
@@ -147,28 +147,51 @@ C:\Users\lucas.martins\OneDrive - insidemedia.net\Documentos\Obsidian Vault\Arch
 | `critical-reviewer` | subagent | Auditor independente |
 
 | `architect-evolution` | subagent | Meta-agente do Evolution System |
-
-
-
 ## Skills
 
 
 
-| Skill | Gatilho |
+| Skill | Gatilho | slash |
+|---|---|---|
+| `briefing` | Transforma inputs vagos em briefings detalhados | true |
+| `obsidian-management` | Ler/criar/organizar notas no vault Architect | true |
+| `marketing-analytics` | Análise de métricas de mídia e campanhas | true |
+| `data-analysis` | Tratamento de dados, estatística, visualização | true |
+| `campaign-timeline` | Análise de campanhas com linha do tempo e correlação com otimizações | true |
+| `html-report-system` | Relatórios, apresentações, dashboards em HTML | true |
+| `development-workflow` | Git, código, arquitetura técnica | true |
+| `proactive-monitoring` | Monitoramento e alertas de anomalias | true |
+| `skill-router` | Roteador obrigatório - sempre carregar no início de qualquer tarefa | true |
 
-|---|---|
 
-| `obsidian-management` | Ler/criar/organizar notas no vault Architect |
 
-| `marketing-analytics` | Análise de métricas de mídia e campanhas |
+### Mecanismo de Ativação
 
-| `data-analysis` | Tratamento de dados, estatística, visualização |
+1. **Via slash:** Digite `/nome-da-skill` no chat
+2. **Via instrução:** Agente carrega automaticamente baseado na tarefa (obrigatório via "Regra Obrigatória: Uso de Skills")
+3. **Via tool skill:** LLM chama explicitamente
 
-| campaign-timeline | Análise de campanhas com linha do tempo e correlação com otimizações |
-| `html-report-system` | Relatórios, apresentações, dashboards em HTML |
+### Regras de Uso
 
-| `development-workflow` | Git, código, arquitetura técnica |
+1. **SEMPRE verificar skills** antes de executar tarefa de análise
+2. **Uma tarefa pode usar múltiplas skills** (ex: análise de dados + relatório HTML)
+3. **Priorizar skills específicas** sobre genéricas
+4. **Documentar qual skill foi usada** no resultado
 
+### Hierarquia de Skills
+
+```
+[0] Briefing → Expande input vago em briefing detalhado
+[1] Skill Router → Roteia para skill de execução correta
+[2] Skills de Execução → Executam a tarefa específica
+```
+
+### Fluxo Obrigatório
+
+Toda tarefa deve seguir:
+1. **Briefing** (sempre) → Input estruturado
+2. **Roteamento** (sempre) → Classificação da tarefa
+3. **Execução** (conforme roteamento) → Resultado
 
 
 ## Workflows
